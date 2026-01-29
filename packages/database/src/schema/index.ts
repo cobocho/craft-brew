@@ -1,2 +1,2 @@
-export * from './brews';
-export * from './brew-logs';
+export * from './beers';
+export * from './temperature-logs';

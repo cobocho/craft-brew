@@ -1,0 +1,178 @@
+{
+  "id": "fb2bb185-b80f-4e9e-b56f-dc3b607f55e2",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.beers": {
+      "name": "beers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "malt": {
+          "name": "malt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hop": {
+          "name": "hop",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "water": {
+          "name": "water",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yeast": {
+          "name": "yeast",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "additives": {
+          "name": "additives",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume": {
+          "name": "volume",
+          "type": "numeric(5, 1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "og": {
+          "name": "og",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg": {
+          "name": "fg",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "memo": {
+          "name": "memo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fermentation_start": {
+          "name": "fermentation_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fermentation_end": {
+          "name": "fermentation_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fermentation_temp": {
+          "name": "fermentation_temp",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fermentation_actual_temp": {
+          "name": "fermentation_actual_temp",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fermentation_actual_humidity": {
+          "name": "fermentation_actual_humidity",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aging_start": {
+          "name": "aging_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aging_end": {
+          "name": "aging_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aging_temp": {
+          "name": "aging_temp",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aging_actual_temp": {
+          "name": "aging_actual_temp",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aging_actual_humidity": {
+          "name": "aging_actual_humidity",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
