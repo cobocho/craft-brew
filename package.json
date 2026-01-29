@@ -1,0 +1,17 @@
+{
+	"name": "craft-brew",
+	"private": true,
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "bun run --filter '*' dev",
+		"build": "bun run --filter '*' build",
+		"lint": "bun run --filter '*' lint",
+		"test": "bun run --filter '*' test"
+	},
+	"devDependencies": {
+		"typescript": "^5.3.3"
+	}
+}
