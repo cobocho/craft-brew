@@ -1,0 +1,15 @@
+{
+	"name": "@craft-brew/redis",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"devDependencies": {
+		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"dayjs": "^1.11.19",
+		"ioredis": "^5.9.2"
+	}
+}
