@@ -6,7 +6,9 @@
 	"main": "./src/index.ts",
 	"scripts": {
 		"dev": "bun --watch src/index.ts",
-		"start": "bun src/index.ts"
+		"start": "bun src/index.ts",
+		"docker:build": "docker build -t ghcr.io/${npm_config_user:-$USER}/queue-ingest:local -f apps/queue-ingest/Dockerfile .",
+		"docker:run": "docker run --rm ghcr.io/${npm_config_user:-$USER}/queue-ingest:local"
 	},
 	"dependencies": {
 		"@craft-brew/database": "workspace:*",
