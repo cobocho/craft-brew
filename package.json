@@ -13,5 +13,8 @@
 	},
 	"devDependencies": {
 		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"node-cron": "^4.2.1"
 	}
 }

@@ -22,6 +22,13 @@ export interface Average24h {
 	count: number;
 }
 
+export interface DailyStats {
+	date: string;
+	avgTemp: number | null;
+	avgHumidity: number | null;
+	avgPeltierPower: number | null;
+}
+
 export class HomebrewRedis {
 	private redis: Redis;
 

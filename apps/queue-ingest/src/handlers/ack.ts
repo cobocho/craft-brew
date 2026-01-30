@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 import { AckPayload } from '@craft-brew/protocol';
-import { db, commands, settings } from '@craft-brew/database';
-import { eq } from 'drizzle-orm';
+import { db, commands } from '@craft-brew/database';
 
 export async function handleAck(payload: string) {
 	try {
@@ -34,25 +33,6 @@ export async function handleAck(payload: string) {
 						completed_at: new Date(ack.ts * 1000),
 					},
 				});
-
-			if (!value) {
-				return;
-			}
-
-			switch (ack.cmd) {
-				case 'set_target':
-					await db
-						.update(settings)
-						.set({
-							targetTemp: value,
-						})
-						.where();
-					break;
-				case 'set_peltier':
-					break;
-				case 'restart':
-					break;
-			}
 		}
 
 		if (!ack.success) {

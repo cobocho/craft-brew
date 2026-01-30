@@ -17,8 +17,9 @@ export async function handleStatus(payload: string) {
 		});
 
 		if (status.temp !== null) {
-			await redis.addReading(status.temp, status.humidity ?? 0);
 			const beer = await redis.getBeer();
+
+			await redis.addReading(status.temp, status.humidity ?? 0);
 			await db.insert(fridgeLogs).values({
 				recordedAt: new Date(status.ts * 1000),
 				temperature: status.temp?.toString(),

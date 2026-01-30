@@ -1,10 +1,17 @@
 import chalk from 'chalk';
 
 import { connectMqtt } from './mqtt-client';
+import './cron';
 import { config } from './config';
 import { TOPICS } from './topics';
 import { handleStatus } from './handlers/status';
 import { handleAck } from './handlers/ack';
+import { recoverMissedStats } from './cron/daily-stats';
+
+console.log(chalk.green('[APP]'), 'Starting the application...');
+console.log(chalk.green('[APP]'), 'Server time:', new Date().toLocaleString());
+
+recoverMissedStats().catch(console.error);
 
 const mqttClient = connectMqtt({
 	brokerUrl: config.mqttBrokerUrl,
