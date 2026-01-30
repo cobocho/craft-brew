@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { StatusPayload } from '@craft-brew/protocol';
 import { db, fridgeLogs } from '@craft-brew/database';
 import { redis } from '../lib/redis';
+import { eq } from 'drizzle-orm';
 
 export async function handleStatus(payload: string) {
 	try {
@@ -18,6 +19,15 @@ export async function handleStatus(payload: string) {
 
 		if (status.temp !== null) {
 			const beer = await redis.getBeer();
+
+			const existedLog = await db.query.fridgeLogs.findFirst({
+				where: eq(fridgeLogs.recordedAt, new Date(status.ts * 1000)),
+			});
+
+			if (existedLog) {
+				console.log(chalk.yellow('[STATUS]'), 'log already exists');
+				return;
+			}
 
 			await redis.addReading(status.temp, status.humidity ?? 0);
 			await db.insert(fridgeLogs).values({
