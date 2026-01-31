@@ -31,7 +31,6 @@ export default async function BeerUpdatePage({
 			<PageHeader
 				title="맥주 수정"
 				showBackButton
-				backHref="/beer"
 				action={
 					<DeleteBeerButton
 						beerId={beer[0].id}

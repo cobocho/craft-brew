@@ -34,6 +34,14 @@ export interface DailyStats {
 	avgPeltierPower: number | null;
 }
 
+export interface PushSubscriptionData {
+	endpoint: string;
+	keys: {
+		p256dh: string;
+		auth: string;
+	};
+}
+
 export class HomebrewRedis {
 	private redis: Redis;
 
@@ -43,6 +51,7 @@ export class HomebrewRedis {
 		avg24h: 'fridge:24h',
 		avg24hVals: 'fridge:24h:vals',
 		lastDBSaveAt: 'fridge:last_db_save_at',
+		pushSubs: 'fridge:push:subs',
 	};
 
 	private readonly ttl = {
@@ -226,6 +235,35 @@ export class HomebrewRedis {
 			this.keys.beer,
 			this.keys.avg24h,
 			this.keys.avg24hVals,
+			this.keys.pushSubs,
 		);
+	}
+
+	async addPushSubscription(subscription: PushSubscriptionData): Promise<void> {
+		await this.redis.hset(
+			this.keys.pushSubs,
+			subscription.endpoint,
+			JSON.stringify(subscription),
+		);
+	}
+
+	async removePushSubscription(endpoint: string): Promise<void> {
+		await this.redis.hdel(this.keys.pushSubs, endpoint);
+	}
+
+	async getPushSubscriptions(): Promise<PushSubscriptionData[]> {
+		const data = await this.redis.hgetall(this.keys.pushSubs);
+		const subs: PushSubscriptionData[] = [];
+		Object.values(data).forEach((value) => {
+			try {
+				const parsed = JSON.parse(value) as PushSubscriptionData;
+				if (parsed.endpoint && parsed.keys?.p256dh && parsed.keys?.auth) {
+					subs.push(parsed);
+				}
+			} catch {
+				// ignore invalid entries
+			}
+		});
+		return subs;
 	}
 }

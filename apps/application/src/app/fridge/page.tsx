@@ -28,6 +28,7 @@ import { BEER_TYPES } from '@/constants/beer-types';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import { getBeerById } from '@/api/beer/action';
+import { PwaNotifications } from '@/components/pwa-notifications';
 
 dayjs.extend(duration);
 
@@ -48,7 +49,7 @@ export default function FridgePage() {
 	);
 	const [agingDialogOpen, setAgingDialogOpen] = useState(false);
 	const [agingDays, setAgingDays] = useState('');
-	const [bottlingGravity, setBottlingGravity] = useState('');
+	const [bottlingGravity, setBottlingGravity] = useState('1.010');
 	const [originalGravity, setOriginalGravity] = useState<number | null>(null);
 
 	// SSE로 실시간 상태 받기
@@ -267,16 +268,17 @@ export default function FridgePage() {
 
 	return (
 		<div className="h-full overflow-y-auto">
-			<PageHeader
-				title="냉장고"
-				showBackButton
-				action={
-					<div className="flex items-center gap-2">
-						<Button
-							asChild
-							variant="ghost"
-							size="icon-sm"
-						>
+		<PageHeader
+			title="냉장고"
+			showBackButton
+			action={
+				<div className="flex items-center gap-2">
+					<PwaNotifications />
+					<Button
+						asChild
+						variant="ghost"
+						size="icon-sm"
+					>
 							<Link
 								href="/fridge/info"
 								aria-label="현재 상태"

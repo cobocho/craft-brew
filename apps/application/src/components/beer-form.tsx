@@ -33,6 +33,7 @@ import { Beer } from '@craft-brew/database';
 import { createBeer, updateBeer } from '@/api/beer/action';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface CreateBeerFormProps {
 	mode: 'create';
@@ -55,9 +56,58 @@ export function BeerForm({ mode, defaultValues }: BeerFormProps) {
 		defaultValues: defaultValues ?? {
 			name: '',
 			type: '',
-			volume: '10.0',
+			volume: '11.5',
 		},
 	});
+
+	const toDateTimeLocalValue = (value: Date | string | null | undefined) => {
+		if (!value) {
+			return '';
+		}
+		const date = value instanceof Date ? value : new Date(value);
+		if (Number.isNaN(date.getTime())) {
+			return '';
+		}
+		const pad = (v: number) => v.toString().padStart(2, '0');
+		const year = date.getFullYear();
+		const month = pad(date.getMonth() + 1);
+		const day = pad(date.getDate());
+		const hours = pad(date.getHours());
+		const minutes = pad(date.getMinutes());
+		return `${year}-${month}-${day}T${hours}:${minutes}`;
+	};
+
+	const applyBeerTypeProfile = (typeValue: string) => {
+		const profile = BEER_TYPES.find((type) => type.value === typeValue);
+		form.setValue('type', typeValue, {
+			shouldDirty: true,
+			shouldValidate: true,
+		});
+		if (!profile) {
+			return;
+		}
+
+		form.setValue('fermentationTemp', profile.fermentationTemp.toFixed(1), {
+			shouldDirty: true,
+		});
+		form.setValue('agingTemp', profile.agingTemp.toFixed(1), {
+			shouldDirty: true,
+		});
+	};
+
+	const handleBeerTypeChange = (value: string) => {
+		if (value === form.getValues('type')) {
+			return;
+		}
+		if (mode === 'create') {
+			applyBeerTypeProfile(value);
+			return;
+		}
+		form.setValue('type', value, {
+			shouldDirty: true,
+			shouldValidate: true,
+		});
+	};
 
 	const handleCreate = async (data: CreateBeerInput) => {
 		try {
@@ -168,7 +218,7 @@ export function BeerForm({ mode, defaultValues }: BeerFormProps) {
 										<FormItem>
 											<FormLabel required>맥주 타입</FormLabel>
 											<Select
-												onValueChange={field.onChange}
+												onValueChange={handleBeerTypeChange}
 												defaultValue={field.value}
 												value={field.value}
 											>
@@ -384,19 +434,15 @@ export function BeerForm({ mode, defaultValues }: BeerFormProps) {
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel>시작일</FormLabel>
-												<FormControl>
-													<DateTimePicker
-														value={
-															field.value
-																? new Date(field.value).toISOString()
-																: ''
-														}
-														onChange={(value) =>
-															field.onChange(value ? new Date(value) : null)
-														}
-														onReset={() => field.onChange(null)}
-													/>
-												</FormControl>
+											<FormControl>
+												<DateTimePicker
+													value={toDateTimeLocalValue(field.value)}
+													onChange={(value) =>
+														field.onChange(value ? new Date(value) : null)
+													}
+													onReset={() => field.onChange(null)}
+												/>
+											</FormControl>
 												<FormMessage />
 											</FormItem>
 										)}
@@ -407,19 +453,15 @@ export function BeerForm({ mode, defaultValues }: BeerFormProps) {
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel>종료일</FormLabel>
-												<FormControl>
-													<DateTimePicker
-														value={
-															field.value
-																? new Date(field.value).toISOString()
-																: ''
-														}
-														onChange={(value) =>
-															field.onChange(value ? new Date(value) : null)
-														}
-														onReset={() => field.onChange(null)}
-													/>
-												</FormControl>
+											<FormControl>
+												<DateTimePicker
+													value={toDateTimeLocalValue(field.value)}
+													onChange={(value) =>
+														field.onChange(value ? new Date(value) : null)
+													}
+													onReset={() => field.onChange(null)}
+												/>
+											</FormControl>
 												<FormMessage />
 											</FormItem>
 										)}
@@ -461,19 +503,15 @@ export function BeerForm({ mode, defaultValues }: BeerFormProps) {
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel>시작일</FormLabel>
-												<FormControl>
-													<DateTimePicker
-														value={
-															field.value
-																? new Date(field.value).toISOString()
-																: ''
-														}
-														onChange={(value) =>
-															field.onChange(value ? new Date(value) : null)
-														}
-														onReset={() => field.onChange(null)}
-													/>
-												</FormControl>
+											<FormControl>
+												<DateTimePicker
+													value={toDateTimeLocalValue(field.value)}
+													onChange={(value) =>
+														field.onChange(value ? new Date(value) : null)
+													}
+													onReset={() => field.onChange(null)}
+												/>
+											</FormControl>
 												<FormMessage />
 											</FormItem>
 										)}
@@ -484,19 +522,15 @@ export function BeerForm({ mode, defaultValues }: BeerFormProps) {
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel>종료일</FormLabel>
-												<FormControl>
-													<DateTimePicker
-														value={
-															field.value
-																? new Date(field.value).toISOString()
-																: ''
-														}
-														onChange={(value) =>
-															field.onChange(value ? new Date(value) : null)
-														}
-														onReset={() => field.onChange(null)}
-													/>
-												</FormControl>
+											<FormControl>
+												<DateTimePicker
+													value={toDateTimeLocalValue(field.value)}
+													onChange={(value) =>
+														field.onChange(value ? new Date(value) : null)
+													}
+													onReset={() => field.onChange(null)}
+												/>
+											</FormControl>
 												<FormMessage />
 											</FormItem>
 										)}
@@ -564,6 +598,7 @@ export function BeerForm({ mode, defaultValues }: BeerFormProps) {
 						{mode === 'create' ? '등록' : '수정'}
 					</Button>
 				</div>
+
 			</form>
 		</Form>
 	);
