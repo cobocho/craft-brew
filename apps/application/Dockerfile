@@ -6,7 +6,7 @@ COPY package.json ./
 COPY packages ./packages
 COPY apps/application ./apps/application
 
-RUN npm install
+RUN npm install --workspaces --include-workspace-root
 RUN npm run --workspace application build
 
 ENV NODE_ENV=production
