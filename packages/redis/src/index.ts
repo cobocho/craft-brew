@@ -8,12 +8,17 @@ export interface FridgeStatus {
 	updatedAt: number;
 }
 
+export type FridgeBeerStatus = 'fermentation' | 'aging';
+
 export interface FridgeBeer {
 	id: number;
 	name: string;
 	type: string;
-	startDate: string;
-	endDate: string;
+	status: FridgeBeerStatus;
+	fermentationStart: string | null;
+	fermentationEnd: string | null;
+	agingStart: string | null;
+	agingEnd: string | null;
 }
 
 export interface Average24h {
@@ -118,8 +123,11 @@ export class HomebrewRedis {
 			id: beer.id.toString(),
 			name: beer.name,
 			type: beer.type,
-			start_date: beer.startDate,
-			end_date: beer.endDate,
+			status: beer.status,
+			fermentation_start: beer.fermentationStart ?? '',
+			fermentation_end: beer.fermentationEnd ?? '',
+			aging_start: beer.agingStart ?? '',
+			aging_end: beer.agingEnd ?? '',
 		});
 	}
 
@@ -130,12 +138,27 @@ export class HomebrewRedis {
 			return null;
 		}
 
+		const readDate = (value?: string) => (value ? value : null);
+
+		const fermentationStart = readDate(
+			data.fermentation_start ?? data.start_date,
+		);
+		const fermentationEnd = readDate(data.fermentation_end ?? data.end_date);
+
+		const status =
+			data.status === 'aging' || data.status === 'fermentation'
+				? data.status
+				: 'fermentation';
+
 		return {
 			id: parseInt(data.id),
 			name: data.name,
 			type: data.type,
-			startDate: data.start_date,
-			endDate: data.end_date,
+			status,
+			fermentationStart,
+			fermentationEnd,
+			agingStart: readDate(data.aging_start),
+			agingEnd: readDate(data.aging_end),
 		};
 	}
 

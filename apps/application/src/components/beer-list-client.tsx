@@ -4,9 +4,23 @@ import { Beer } from '@craft-brew/database';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { deleteBeer } from '@/api/beer/action';
+import { deleteBeer, setBeerFermentationDuration } from '@/api/beer/action';
+import {
+	clearFridgeBeer,
+	getFridgeStatus,
+	setFridgeBeer,
+} from '@/api/fridge/action';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -34,6 +48,24 @@ interface BeerListClientProps {
 export function BeerListClient({ beers, pagination }: BeerListClientProps) {
 	const router = useRouter();
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [currentBeerId, setCurrentBeerId] = useState<number | null>(null);
+	const [isSettingBeerId, setIsSettingBeerId] = useState<number | null>(null);
+	const [fermentationDialogOpen, setFermentationDialogOpen] = useState(false);
+	const [pendingBeer, setPendingBeer] = useState<Beer | null>(null);
+	const [fermentationDays, setFermentationDays] = useState('');
+
+	useEffect(() => {
+		const fetchCurrentBeer = async () => {
+			const result = await getFridgeStatus();
+			if (result.success && result.data?.beer) {
+				setCurrentBeerId(result.data.beer.id);
+			} else {
+				setCurrentBeerId(null);
+			}
+		};
+
+		fetchCurrentBeer();
+	}, []);
 
 	const handleDelete = async (beerId: number, beerName: string) => {
 		setIsDeleting(true);
@@ -51,6 +83,83 @@ export function BeerListClient({ beers, pagination }: BeerListClientProps) {
 			console.error(error);
 		} finally {
 			setIsDeleting(false);
+		}
+	};
+
+	const handleSetFridgeBeer = async (beerId: number, beerName: string) => {
+		setIsSettingBeerId(beerId);
+		try {
+			if (currentBeerId === beerId) {
+				const result = await clearFridgeBeer();
+				if (result.success) {
+					setCurrentBeerId(null);
+					toast.success('냉장고 설정을 해제했습니다.');
+					router.refresh();
+				} else {
+					toast.error(result.error || '냉장고 설정 해제에 실패했습니다.');
+				}
+			} else {
+				const result = await setFridgeBeer(beerId);
+				if (result.success) {
+					setCurrentBeerId(beerId);
+					toast.success(`"${beerName}" 맥주를 냉장고에 설정했습니다.`);
+					router.refresh();
+				} else {
+					toast.error(result.error || '냉장고 설정에 실패했습니다.');
+				}
+			}
+		} catch (error) {
+			toast.error('냉장고 설정 처리 중 오류가 발생했습니다.');
+			console.error(error);
+		} finally {
+			setIsSettingBeerId(null);
+		}
+	};
+
+	const handleOpenFermentationDialog = (beer: Beer) => {
+		setPendingBeer(beer);
+		setFermentationDays('');
+		setFermentationDialogOpen(true);
+	};
+
+	const handleSkipFermentation = async () => {
+		if (!pendingBeer) {
+			return;
+		}
+		setFermentationDialogOpen(false);
+		await handleSetFridgeBeer(pendingBeer.id, pendingBeer.name);
+		setPendingBeer(null);
+	};
+
+	const handleSaveFermentation = async () => {
+		if (!pendingBeer) {
+			return;
+		}
+		const days = Number(fermentationDays);
+		if (!Number.isFinite(days) || days <= 0) {
+			toast.error('발효 기간은 1일 이상 입력해주세요.');
+			return;
+		}
+
+		setIsSettingBeerId(pendingBeer.id);
+		try {
+			const result = await setBeerFermentationDuration({
+				id: pendingBeer.id,
+				days,
+			});
+			if (!result.success) {
+				toast.error(result.error || '발효 일정 저장에 실패했습니다.');
+				return;
+			}
+
+			setFermentationDialogOpen(false);
+			await handleSetFridgeBeer(pendingBeer.id, pendingBeer.name);
+			setPendingBeer(null);
+		} catch (error) {
+			toast.error('발효 일정 저장 중 오류가 발생했습니다.');
+			console.error(error);
+		} finally {
+			setIsSettingBeerId(null);
 		}
 	};
 
@@ -100,6 +209,7 @@ export function BeerListClient({ beers, pagination }: BeerListClientProps) {
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{beers.map((beer) => {
 					const status = getBrewingStatus(beer);
+					const isCurrentBeer = currentBeerId === beer.id;
 
 					return (
 						<div
@@ -175,6 +285,26 @@ export function BeerListClient({ beers, pagination }: BeerListClientProps) {
 									)}
 								</div>
 							</Link>
+
+							<div className="mt-4 flex items-center justify-between gap-2">
+								<div className="text-xs text-muted-foreground">
+									{isCurrentBeer ? '현재 냉장고 설정됨' : '냉장고에 설정 가능'}
+								</div>
+								<Button
+									size="sm"
+									variant={isCurrentBeer ? 'outline' : 'default'}
+									disabled={isSettingBeerId === beer.id}
+									onClick={() => {
+										if (!isCurrentBeer && !beer.fermentationEnd) {
+											handleOpenFermentationDialog(beer);
+											return;
+										}
+										handleSetFridgeBeer(beer.id, beer.name);
+									}}
+								>
+									{isCurrentBeer ? '설정됨' : '냉장고에 설정'}
+								</Button>
+							</div>
 
 							{/* Delete Button */}
 							<div className="absolute top-4 right-4">
@@ -287,6 +417,41 @@ export function BeerListClient({ beers, pagination }: BeerListClientProps) {
 				총 {pagination.totalCount}개의 맥주 ({pagination.page} /{' '}
 				{pagination.totalPages} 페이지)
 			</div>
+
+			<Dialog
+				open={fermentationDialogOpen}
+				onOpenChange={setFermentationDialogOpen}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>발효를 얼마나 하실 예정인가요?</DialogTitle>
+						<DialogDescription>
+							발효 기간을 입력하면 종료일이 자동으로 저장됩니다.
+							스킵하면 나중에 다시 설정할 수 있어요.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="grid gap-2">
+						<label className="text-xs text-muted-foreground">발효 기간</label>
+						<div className="flex items-center gap-2">
+							<Input
+								type="number"
+								min={1}
+								placeholder="예: 7"
+								value={fermentationDays}
+								onChange={(event) => setFermentationDays(event.target.value)}
+								className="h-9"
+							/>
+							<span className="text-sm text-muted-foreground">일</span>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={handleSkipFermentation}>
+							스킵
+						</Button>
+						<Button onClick={handleSaveFermentation}>저장하고 설정</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

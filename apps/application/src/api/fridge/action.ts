@@ -2,8 +2,8 @@
 
 import { HomebrewRedis } from '@craft-brew/redis';
 import mqtt from 'mqtt';
-import { and, desc, gte, lte, eq, count, isNotNull } from 'drizzle-orm';
-import { db, commands, fridgeLogs } from '@craft-brew/database';
+import { and, desc, gte, lte, eq, count, isNotNull, sql } from 'drizzle-orm';
+import { db, commands, fridgeLogs, beers } from '@craft-brew/database';
 import type { Command } from '@craft-brew/protocol';
 
 const redis = new HomebrewRedis();
@@ -110,7 +110,245 @@ export async function setFridgeTarget(temp: number | null) {
 	}
 }
 
-export async function sendFridgeCommand(cmd: Command, value?: number | boolean | null) {
+export async function setFridgeBeer(beerId: number) {
+	try {
+		const beer = await db
+			.select()
+			.from(beers)
+			.where(eq(beers.id, beerId))
+			.limit(1);
+
+		const selectedBeer = beer[0];
+		if (!selectedBeer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		let fermentationStart = selectedBeer.fermentationStart;
+		if (!fermentationStart) {
+			const updated = await db
+				.update(beers)
+				.set({ fermentationStart: new Date() })
+				.where(eq(beers.id, beerId))
+				.returning();
+			fermentationStart = updated[0]?.fermentationStart ?? new Date();
+		}
+
+		await redis.setBeer({
+			id: selectedBeer.id,
+			name: selectedBeer.name,
+			type: selectedBeer.type,
+			status: 'fermentation',
+			fermentationStart: fermentationStart
+				? fermentationStart.toISOString()
+				: null,
+			fermentationEnd: selectedBeer.fermentationEnd
+				? selectedBeer.fermentationEnd.toISOString()
+				: null,
+			agingStart: selectedBeer.agingStart
+				? selectedBeer.agingStart.toISOString()
+				: null,
+			agingEnd: selectedBeer.agingEnd
+				? selectedBeer.agingEnd.toISOString()
+				: null,
+		});
+
+		return { success: true };
+	} catch (error) {
+		return {
+			success: false,
+			error: (error as Error).message,
+		};
+	}
+}
+
+export async function startFridgeBeerAging({
+	days,
+	fg,
+}: {
+	days: number;
+	fg?: string | null;
+}) {
+	try {
+		if (!Number.isFinite(days) || days <= 0) {
+			return { success: false, error: 'invalid_days' };
+		}
+
+		if (fg && Number.isNaN(Number(fg))) {
+			return { success: false, error: 'invalid_fg' };
+		}
+
+		const currentBeer = await redis.getBeer();
+		if (!currentBeer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		const beerRows = await db
+			.select()
+			.from(beers)
+			.where(eq(beers.id, currentBeer.id))
+			.limit(1);
+
+		const beer = beerRows[0];
+		if (!beer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		const now = new Date();
+		const agingStart = now;
+		const agingEnd = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+		const fgValue = fg && fg.trim() !== '' ? fg.trim() : null;
+		const fermentationStart = beer.fermentationStart ?? now;
+		const fermentationEnd = beer.fermentationEnd ?? now;
+
+		const [avgResult] = await db
+			.select({
+				avgTemp: sql<number>`avg(${fridgeLogs.temperature})`,
+				avgHumidity: sql<number>`avg(${fridgeLogs.humidity})`,
+			})
+			.from(fridgeLogs)
+			.where(
+				and(
+					gte(fridgeLogs.recordedAt, fermentationStart),
+					lte(fridgeLogs.recordedAt, fermentationEnd),
+				),
+			);
+
+		const avgTemp =
+			avgResult?.avgTemp !== null && avgResult?.avgTemp !== undefined
+				? Number(avgResult.avgTemp)
+				: null;
+		const avgHumidity =
+			avgResult?.avgHumidity !== null && avgResult?.avgHumidity !== undefined
+				? Number(avgResult.avgHumidity)
+				: null;
+
+		const updated = await db
+			.update(beers)
+			.set({
+				agingStart,
+				agingEnd,
+				fg: fgValue,
+				fermentationEnd,
+				fermentationActualTemp: avgTemp !== null ? avgTemp.toFixed(1) : null,
+				fermentationActualHumidity:
+					avgHumidity !== null ? avgHumidity.toFixed(1) : null,
+			})
+			.where(eq(beers.id, currentBeer.id))
+			.returning();
+
+		const updatedBeer = updated[0];
+		if (!updatedBeer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		await redis.setBeer({
+			id: updatedBeer.id,
+			name: updatedBeer.name,
+			type: updatedBeer.type,
+			status: 'aging',
+			fermentationStart: updatedBeer.fermentationStart
+				? updatedBeer.fermentationStart.toISOString()
+				: null,
+			fermentationEnd: updatedBeer.fermentationEnd
+				? updatedBeer.fermentationEnd.toISOString()
+				: null,
+			agingStart: updatedBeer.agingStart
+				? updatedBeer.agingStart.toISOString()
+				: null,
+			agingEnd: updatedBeer.agingEnd
+				? updatedBeer.agingEnd.toISOString()
+				: null,
+		});
+
+		return { success: true };
+	} catch (error) {
+		return {
+			success: false,
+			error: (error as Error).message,
+		};
+	}
+}
+
+export async function clearFridgeBeer() {
+	try {
+		await redis.clearBeer();
+		return { success: true };
+	} catch (error) {
+		return {
+			success: false,
+			error: (error as Error).message,
+		};
+	}
+}
+
+export async function finishFridgeBeer() {
+	try {
+		const currentBeer = await redis.getBeer();
+		if (!currentBeer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		const beerRows = await db
+			.select()
+			.from(beers)
+			.where(eq(beers.id, currentBeer.id))
+			.limit(1);
+
+		const beer = beerRows[0];
+		if (!beer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		const now = new Date();
+		const agingStart = beer.agingStart ?? now;
+		const agingEnd = beer.agingEnd ?? now;
+
+		const [avgResult] = await db
+			.select({
+				avgTemp: sql<number>`avg(${fridgeLogs.temperature})`,
+				avgHumidity: sql<number>`avg(${fridgeLogs.humidity})`,
+			})
+			.from(fridgeLogs)
+			.where(
+				and(
+					gte(fridgeLogs.recordedAt, agingStart),
+					lte(fridgeLogs.recordedAt, agingEnd),
+				),
+			);
+
+		const avgTemp =
+			avgResult?.avgTemp !== null && avgResult?.avgTemp !== undefined
+				? Number(avgResult.avgTemp)
+				: null;
+		const avgHumidity =
+			avgResult?.avgHumidity !== null && avgResult?.avgHumidity !== undefined
+				? Number(avgResult.avgHumidity)
+				: null;
+
+		await db
+			.update(beers)
+			.set({
+				agingEnd,
+				agingActualTemp: avgTemp !== null ? avgTemp.toFixed(1) : null,
+				agingActualHumidity:
+					avgHumidity !== null ? avgHumidity.toFixed(1) : null,
+			})
+			.where(eq(beers.id, beer.id));
+
+		await redis.clearBeer();
+		return { success: true };
+	} catch (error) {
+		return {
+			success: false,
+			error: (error as Error).message,
+		};
+	}
+}
+
+export async function sendFridgeCommand(
+	cmd: Command,
+	value?: number | boolean | null,
+) {
 	try {
 		if (!isCommand(cmd)) {
 			return { success: false, error: 'invalid_cmd' };
@@ -294,9 +532,7 @@ export async function getCommandLogs({
 				completed: log.completed,
 				error: log.error,
 				ts: log.ts.toISOString(),
-				completedAt: log.completed_at
-					? log.completed_at.toISOString()
-					: null,
+				completedAt: log.completed_at ? log.completed_at.toISOString() : null,
 			})),
 			summary: { total, success, failed, pending },
 		};

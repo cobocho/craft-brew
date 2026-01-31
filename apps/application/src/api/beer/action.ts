@@ -155,3 +155,46 @@ export async function deleteBeer(id: number) {
 		};
 	}
 }
+
+export async function setBeerFermentationDuration({
+	id,
+	days,
+}: {
+	id: number;
+	days: number;
+}) {
+	try {
+		if (!Number.isFinite(days) || days <= 0) {
+			return { success: false, error: 'invalid_days' };
+		}
+
+		const selected = await db
+			.select()
+			.from(beers)
+			.where(eq(beers.id, id))
+			.limit(1);
+
+		const beer = selected[0];
+		if (!beer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		const fermentationStart = beer.fermentationStart ?? new Date();
+		const fermentationEnd = new Date(
+			fermentationStart.getTime() + days * 24 * 60 * 60 * 1000,
+		);
+
+		await db
+			.update(beers)
+			.set({ fermentationStart, fermentationEnd })
+			.where(eq(beers.id, id));
+
+		revalidatePath('/beer');
+		return { success: true };
+	} catch (error) {
+		return {
+			success: false,
+			error: (error as Error).message,
+		};
+	}
+}

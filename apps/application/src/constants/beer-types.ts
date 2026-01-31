@@ -1,6 +1,14 @@
 export interface BeerType {
 	value: string;
 	color: string;
+	// 발효 권장 온도
+	fermentationTemp: number;
+	// 발효 권장 기간
+	fermentationDays: number;
+	// 숙성 권장 온도
+	agingTemp: number;
+	// 숙성 권장 기간
+	agingDays: number;
 }
 
 export const BEER_TYPES: BeerType[] = [

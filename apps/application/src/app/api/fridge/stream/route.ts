@@ -53,7 +53,6 @@ export async function GET(request: NextRequest) {
 				if (topic === STATUS_TOPIC) {
 					try {
 						const payload = JSON.parse(message.toString());
-						console.log('[SSE] Status received:', payload);
 
 						const data = encoder.encode(
 							`data: ${JSON.stringify({ type: 'status', payload })}\n\n`,

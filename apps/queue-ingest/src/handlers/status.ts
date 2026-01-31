@@ -13,6 +13,8 @@ export async function handleStatus(payload: string) {
 		const status = JSON.parse(payload) as StatusPayload;
 		console.log(chalk.blue('[STATUS]'), 'received', status);
 
+		const nowSec = Math.floor(Date.now() / 1000);
+		const ts = status.ts && status.ts > 0 ? status.ts : nowSec;
 		const currentStatus = await redis.getStatus();
 
 		await redis.setStatus({
@@ -20,12 +22,11 @@ export async function handleStatus(payload: string) {
 			humidity: status.humidity,
 			power: status.power,
 			target: status.target,
-			updatedAt: status.ts,
+			updatedAt: ts,
 		});
 
 		const skipDBSave =
-			currentStatus &&
-			status.ts - currentStatus.updatedAt < DB_SAVE_THROTTLE_SEC;
+			currentStatus && ts - currentStatus.updatedAt < DB_SAVE_THROTTLE_SEC;
 
 		if (status.temp !== null) {
 			await redis.addReading(status.temp, status.humidity ?? 0);
@@ -40,7 +41,7 @@ export async function handleStatus(payload: string) {
 			const beer = await redis.getBeer();
 
 			const existedLog = await db.query.fridgeLogs.findFirst({
-				where: eq(fridgeLogs.recordedAt, new Date(status.ts * 1000)),
+				where: eq(fridgeLogs.recordedAt, new Date(ts * 1000)),
 			});
 
 			if (existedLog) {
@@ -49,7 +50,7 @@ export async function handleStatus(payload: string) {
 			}
 
 			await db.insert(fridgeLogs).values({
-				recordedAt: new Date(status.ts * 1000),
+				recordedAt: new Date(ts * 1000),
 				temperature: status.temp?.toString(),
 				humidity: status.humidity?.toString(),
 				peltierPower: status.power,
