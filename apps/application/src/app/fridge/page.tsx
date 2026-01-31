@@ -79,6 +79,13 @@ export default function FridgePage() {
 	}, []);
 
 	useEffect(() => {
+		const interval = setInterval(() => {
+			fetchInitialData();
+		}, 60 * 1000);
+		return () => clearInterval(interval);
+	}, []);
+
+	useEffect(() => {
 		const loadOriginalGravity = async () => {
 			if (!agingDialogOpen || !data?.beer) {
 				return;
@@ -261,6 +268,10 @@ export default function FridgePage() {
 			: null;
 	const isPhaseOver = remainingMs !== null && remainingMs <= 0;
 	const phaseRange = formatDateRange(phaseStart ?? null, phaseEnd ?? null);
+	const phaseCompleteText =
+		data.beer?.status === 'aging'
+			? '숙성이 완료되었어요'
+			: '발효가 완료되었어요';
 	const beerColor = data.beer
 		? BEER_TYPES.find((type) => type.value === data.beer?.type)?.color ??
 		  '#F59E0B'
@@ -336,7 +347,9 @@ export default function FridgePage() {
 										</span>
 									</p>
 									<p className="text-[32px] font-semibold text-shadow-lg text-white">
-										{phaseLabel} {formatCountdown(remainingMs)}
+										{isPhaseOver
+											? phaseCompleteText
+											: `${phaseLabel} ${formatCountdown(remainingMs)}`}
 									</p>
 									{phaseRange && (
 										<p className="text-sm text-white/80">{phaseRange}</p>

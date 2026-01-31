@@ -15,7 +15,6 @@ export async function handleStatus(payload: string) {
 
 		const nowSec = Math.floor(Date.now() / 1000);
 		const ts = status.ts && status.ts > 0 ? status.ts : nowSec;
-		const currentStatus = await redis.getStatus();
 
 		await redis.setStatus({
 			temp: status.temp,

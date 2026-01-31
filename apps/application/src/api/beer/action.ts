@@ -2,6 +2,7 @@
 
 import { eq, desc, count } from 'drizzle-orm';
 import { db, beers } from '@craft-brew/database';
+import { HomebrewRedis } from '@craft-brew/redis';
 import {
 	CreateBeerInput,
 	CreateBeerSchema,
@@ -90,6 +91,32 @@ export async function updateBeer(input: UpdateBeerInput) {
 			.set(data)
 			.where(eq(beers.id, data.id))
 			.returning();
+
+		const updatedBeer = beer[0];
+		if (updatedBeer) {
+			const redis = new HomebrewRedis();
+			const currentBeer = await redis.getBeer();
+			if (currentBeer?.id === updatedBeer.id) {
+				await redis.setBeer({
+					id: updatedBeer.id,
+					name: updatedBeer.name,
+					type: updatedBeer.type,
+					status: currentBeer.status,
+					fermentationStart: updatedBeer.fermentationStart
+						? updatedBeer.fermentationStart.toISOString()
+						: null,
+					fermentationEnd: updatedBeer.fermentationEnd
+						? updatedBeer.fermentationEnd.toISOString()
+						: null,
+					agingStart: updatedBeer.agingStart
+						? updatedBeer.agingStart.toISOString()
+						: null,
+					agingEnd: updatedBeer.agingEnd
+						? updatedBeer.agingEnd.toISOString()
+						: null,
+				});
+			}
+		}
 
 		revalidatePath('/beer');
 		return { success: true, beer };

@@ -14,7 +14,8 @@ const TZ = 'Asia/Seoul';
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@craft-brew.local';
+const VAPID_SUBJECT =
+	process.env.VAPID_SUBJECT || 'mailto:admin@craft-brew.local';
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 	webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -60,7 +61,11 @@ async function sendAlert(title: string, body: string) {
 async function checkFridgeAlerts() {
 	try {
 		const beer = await redis.getBeer();
+
+		console.log(chalk.yellow('[Alerts]'), 'checking alerts for beer:', beer);
+
 		if (!beer) {
+			console.log(chalk.yellow('[Alerts]'), 'no beer found');
 			return;
 		}
 
