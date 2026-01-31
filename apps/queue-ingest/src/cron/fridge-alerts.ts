@@ -78,6 +78,11 @@ async function checkFridgeAlerts() {
 		if (beer.fermentationEnd) {
 			const target = dayjs(beer.fermentationEnd).tz(TZ);
 			if (minuteKey(target) === nowMinute) {
+				console.log(
+					chalk.yellow('[Alerts]'),
+					'fermentation end alert:',
+					beer.name,
+				);
 				tasks.push({
 					key: `fridge:alert:${beerKey}:fermentation:${nowMinute}`,
 					title: '발효가 완료되었어요!',
@@ -89,6 +94,7 @@ async function checkFridgeAlerts() {
 		if (beer.agingEnd) {
 			const target = dayjs(beer.agingEnd).tz(TZ);
 			if (minuteKey(target) === nowMinute) {
+				console.log(chalk.yellow('[Alerts]'), 'aging end alert:', beer.name);
 				tasks.push({
 					key: `fridge:alert:${beerKey}:aging:${nowMinute}`,
 					title: '숙성이 완료 되었어요!',
@@ -98,6 +104,7 @@ async function checkFridgeAlerts() {
 		}
 
 		if (tasks.length === 0) {
+			console.log(chalk.yellow('[Alerts]'), 'no alerts to send');
 			return;
 		}
 
@@ -113,6 +120,10 @@ async function checkFridgeAlerts() {
 		console.error(chalk.redBright('[CRON] error:'), (error as Error).message);
 	}
 }
+
+checkFridgeAlerts().catch((error) => {
+	console.error(chalk.redBright('[CRON] error:'), (error as Error).message);
+});
 
 cron.schedule(
 	'* * * * *',
