@@ -18,7 +18,7 @@ export default async function BeerListPage({
 
 	if (!result.success) {
 		return (
-			<div className="min-h-screen bg-background">
+			<div className="h-screen bg-background">
 				<PageHeader title="맥주 목록" />
 				<div className="text-center text-muted-foreground py-12">
 					맥주 목록을 불러오는 중 오류가 발생했습니다.

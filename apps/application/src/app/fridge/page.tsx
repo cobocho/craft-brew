@@ -5,6 +5,10 @@ import { getFridgeStatus } from '@/api/fridge/action';
 import { useEffect, useState } from 'react';
 import { useFridgeStream } from '@/hooks/use-fridge-stream';
 import type { FridgeStatus, Average24h, FridgeBeer } from '@craft-brew/redis';
+import { PageHeader } from '@/components/page-header';
+import { Button } from '@/components/ui/button';
+import { Thermometer, List } from 'lucide-react';
+import Link from 'next/link';
 
 interface FridgeData {
 	status: FridgeStatus;
@@ -19,11 +23,7 @@ export default function FridgePage() {
 	const [isLoading, setIsLoading] = useState(true);
 
 	// SSE로 실시간 상태 받기
-	const {
-		status: mqttStatus,
-		isConnected,
-		error: mqttError,
-	} = useFridgeStream();
+	const { status: mqttStatus } = useFridgeStream();
 
 	// 초기 데이터 로드 (Redis에서)
 	useEffect(() => {
@@ -60,7 +60,7 @@ export default function FridgePage() {
 							humidity: mqttStatus.humidity,
 							power: mqttStatus.power,
 							target: mqttStatus.target,
-							updatedAt: Math.floor(mqttStatus.ts / 1000),
+						updatedAt: mqttStatus.ts,
 						},
 						isOnline: mqttStatus.peltier_enabled,
 						avg24h: { temp: 0, humidity: 0, count: 0 },
@@ -76,7 +76,7 @@ export default function FridgePage() {
 						humidity: mqttStatus.humidity,
 						power: mqttStatus.power,
 						target: mqttStatus.target,
-						updatedAt: Math.floor(mqttStatus.ts / 1000),
+						updatedAt: mqttStatus.ts,
 					},
 					isOnline: mqttStatus.peltier_enabled,
 				};
@@ -101,75 +101,52 @@ export default function FridgePage() {
 				<p className="text-destructive">
 					{error || '데이터를 불러올 수 없습니다.'}
 				</p>
-				{mqttError && (
-					<p className="text-xs text-muted-foreground">MQTT: {mqttError}</p>
-				)}
 			</div>
 		);
 	}
 
 	return (
-		<div className="h-full overflow-y-auto pb-4">
-			<FridgeViewer
-				currentTemp={data.status.temp ?? 0}
-				targetTemp={data.status.target ?? 0}
-				power={data.status.power}
-				humidity={data.status.humidity ?? 0}
-				updatedAt={new Date(data.status.updatedAt * 1000).toISOString()}
-				peltierEnabled={data.isOnline}
+		<div className="h-dvh overflow-y-hidden">
+			<PageHeader
+				title="냉장고"
+				action={
+					<div className="flex items-center gap-2">
+						<Button
+							asChild
+							variant="ghost"
+							size="icon-sm"
+						>
+							<Link
+								href="/fridge/info"
+								aria-label="현재 상태"
+							>
+								<Thermometer className="size-5" />
+							</Link>
+						</Button>
+						<Button
+							asChild
+							variant="ghost"
+							size="icon-sm"
+						>
+							<Link
+								href="/fridge/logs"
+								aria-label="온도 로그"
+							>
+								<List className="size-5" />
+							</Link>
+						</Button>
+					</div>
+				}
 			/>
-
-			{/* 추가 정보 표시 */}
-			<div className="mt-4 space-y-2 px-1">
-				{/* 연결 상태 */}
-				<div className="flex items-center justify-center gap-2 text-xs">
-					<div
-						className={`w-2 h-2 rounded-full ${
-							isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-						}`}
-					/>
-					<span className="text-muted-foreground">
-						MQTT {isConnected ? '연결됨' : '연결 끊김'}
-					</span>
-					{isConnected && (
-						<>
-							<span className="text-muted-foreground">•</span>
-							<span className="text-muted-foreground">실시간 업데이트</span>
-						</>
-					)}
-				</div>
-
-				{data.beer && (
-					<div className="p-4 border rounded-lg">
-						<h3 className="font-semibold mb-2">현재 발효/숙성 중인 맥주</h3>
-						<p className="text-sm">
-							<span className="font-medium">{data.beer.name}</span> (
-							{data.beer.type})
-						</p>
-						<p className="text-xs text-muted-foreground mt-1">
-							{data.beer.startDate} ~ {data.beer.endDate}
-						</p>
-					</div>
-				)}
-
-				{data.avg24h.count > 0 && (
-					<div className="p-4 border rounded-lg">
-						<h3 className="font-semibold mb-2">24시간 평균</h3>
-						<div className="grid grid-cols-2 gap-4 text-sm">
-							<div>
-								<span className="text-muted-foreground">온도: </span>
-								<span className="font-medium">{data.avg24h.temp}°C</span>
-							</div>
-							<div>
-								<span className="text-muted-foreground">습도: </span>
-								<span className="font-medium">{data.avg24h.humidity}%</span>
-							</div>
-						</div>
-						<p className="text-xs text-muted-foreground mt-2">
-							데이터 포인트: {data.avg24h.count}개
-						</p>
-					</div>
-				)}
+			<div className="h-full flex items-center justify-center overflow-y-hidden w-full">
+				<FridgeViewer
+					currentTemp={data.status.temp ?? 0}
+					targetTemp={data.status.target ?? 0}
+					power={data.status.power}
+					humidity={data.status.humidity ?? 0}
+					updatedAt={data.status.updatedAt}
+					peltierEnabled={data.isOnline}
+				/>
 			</div>
 		</div>
 	);

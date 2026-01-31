@@ -36,6 +36,9 @@ export function useFridgeStream() {
 
 					case 'status':
 						if (message.payload) {
+							if (message.payload.ts === 0) {
+								return;
+							}
 							console.log('[SSE] Status received:', message.payload);
 							setStatus(message.payload);
 							setIsConnected(true);

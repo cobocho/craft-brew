@@ -27,7 +27,7 @@ static const char* TOPIC_ACK    = "/homebrew/ack";    // publish QoS2
 
 static const uint16_t HTTP_PORT = 80;
 
-static const int REPORT_INTERVAL_SEC = 3;
+static const int REPORT_INTERVAL_SEC = 1;
 static const float TEMP_RAPID_DELTA = 1.0f;
 static const float TARGET_MIN = 2.0f;
 static const float TARGET_MAX = 30.0f;
@@ -91,12 +91,15 @@ static uint32_t nowUnix() {
   return 0;
 }
 
+static String lastRestartCmdId = "";
+
 // ---------- NVS ----------
 static void loadFromNVS() {
   prefs.begin("homebrew", true);
   gStatus.hasTarget      = prefs.getBool("has_target", false);
   gStatus.target         = prefs.getFloat("target", 0.0f);
   gStatus.peltierEnabled = prefs.getBool("peltier_en", true);
+  lastRestartCmdId       = prefs.getString("restart_id", "");
   prefs.end();
 
 #if LOG_CMD
@@ -104,6 +107,7 @@ static void loadFromNVS() {
     Serial.print("[NVS] hasTarget="); Serial.print(gStatus.hasTarget ? "true" : "false");
     Serial.print(" target="); Serial.print(gStatus.target, 2);
     Serial.print(" peltierEnabled="); Serial.println(gStatus.peltierEnabled ? "true" : "false");
+    Serial.print("[NVS] lastRestartCmdId="); Serial.println(lastRestartCmdId);
   }
 #endif
 }
@@ -130,6 +134,18 @@ static void savePeltierEnabledToNVS(bool en) {
 #if LOG_CMD
   if(isDEBUG) {
     Serial.print("[NVS] save peltierEnabled="); Serial.println(en ? "true" : "false");
+  }
+#endif
+}
+
+static void saveRestartCmdIdToNVS(const char* id) {
+  prefs.begin("homebrew", false);
+  prefs.putString("restart_id", id);
+  prefs.end();
+
+#if LOG_CMD
+  if(isDEBUG) {
+    Serial.print("[NVS] save restart_id="); Serial.println(id);
   }
 #endif
 }
@@ -405,6 +421,15 @@ static void handleCommandMessage(const String& payload) {
 #if LOG_CMD
     if(isDEBUG) Serial.println("[CMD] restart requested");
 #endif
+    if (lastRestartCmdId.length() > 0 && lastRestartCmdId == String(id)) {
+#if LOG_CMD
+      if(isDEBUG) Serial.println("[CMD] restart ignored: duplicate cmd id");
+#endif
+      return;
+    }
+
+    lastRestartCmdId = String(id);
+    saveRestartCmdIdToNVS(id);
     publishAck(id, cmd, true, nullptr);
     delay(200);
     ESP.restart();

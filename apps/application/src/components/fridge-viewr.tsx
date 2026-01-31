@@ -1,12 +1,16 @@
 'use client';
 
+import dayjs from 'dayjs';
+import type { ReactNode } from 'react';
+
 interface FridgeViewerProps {
 	currentTemp: number;
 	targetTemp: number;
 	power: number;
 	humidity: number;
-	updatedAt: string;
+	updatedAt: number;
 	peltierEnabled: boolean;
+	actions?: ReactNode;
 }
 
 export function FridgeViewer({
@@ -16,11 +20,16 @@ export function FridgeViewer({
 	humidity,
 	updatedAt,
 	peltierEnabled,
+	actions,
 }: FridgeViewerProps) {
 	return (
-		<div className="p-4 border border-border rounded-lg h-full flex flex-col justify-between items-center relative">
+		<div className="p-4 w-full aspect-[1/1.5] border border-border rounded-lg flex flex-col justify-between items-center relative">
+			{actions && <div className="absolute top-4 right-4">{actions}</div>}
 			<div className="absolute top-6 left-4 flex flex-col gap-2">
 				<div className="flex flex-col">
+					<span className="text-xs text-muted-foreground mb-2">
+						{dayjs(updatedAt * 1000).format('YYYY-MM-DD HH:mm:ss')}
+					</span>
 					<span className="text-sm text-muted-foreground">
 						온도 <span className="text-xs">/ 목표 온도</span>
 					</span>

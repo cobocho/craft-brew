@@ -43,7 +43,7 @@ export class HomebrewRedis {
 		status: 600,
 	};
 
-	private readonly maxVals = 28800;
+	private readonly maxVals = 60 * 60 * 24;
 
 	constructor(url?: string) {
 		this.redis = new Redis(
