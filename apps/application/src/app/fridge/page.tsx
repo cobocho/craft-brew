@@ -60,7 +60,7 @@ export default function FridgePage() {
 							humidity: mqttStatus.humidity,
 							power: mqttStatus.power,
 							target: mqttStatus.target,
-						updatedAt: mqttStatus.ts,
+							updatedAt: mqttStatus.ts,
 						},
 						isOnline: mqttStatus.peltier_enabled,
 						avg24h: { temp: 0, humidity: 0, count: 0 },
@@ -106,9 +106,10 @@ export default function FridgePage() {
 	}
 
 	return (
-		<div className="h-dvh overflow-y-hidden">
+		<div className="h-full overflow-hidden">
 			<PageHeader
 				title="냉장고"
+				showBackButton
 				action={
 					<div className="flex items-center gap-2">
 						<Button
@@ -138,7 +139,7 @@ export default function FridgePage() {
 					</div>
 				}
 			/>
-			<div className="h-full flex items-center justify-center overflow-y-hidden w-full">
+			<div className="h-full flex items-center justify-center overflow-hidden w-full">
 				<FridgeViewer
 					currentTemp={data.status.temp ?? 0}
 					targetTemp={data.status.target ?? 0}

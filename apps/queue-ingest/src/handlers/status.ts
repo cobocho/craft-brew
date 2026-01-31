@@ -27,6 +27,10 @@ export async function handleStatus(payload: string) {
 			currentStatus &&
 			status.ts - currentStatus.updatedAt < DB_SAVE_THROTTLE_SEC;
 
+		if (status.temp !== null) {
+			await redis.addReading(status.temp, status.humidity ?? 0);
+		}
+
 		if (skipDBSave) {
 			console.log(chalk.gray('[STATUS]'), 'db save skipped (throttled)');
 			return;
@@ -43,8 +47,6 @@ export async function handleStatus(payload: string) {
 				console.log(chalk.yellow('[STATUS]'), 'log already exists');
 				return;
 			}
-
-			await redis.addReading(status.temp, status.humidity ?? 0);
 
 			await db.insert(fridgeLogs).values({
 				recordedAt: new Date(status.ts * 1000),

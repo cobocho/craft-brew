@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
+import { ScrollToTop } from '@/components/scroll-to-top';
 
 const ibmPlexSans = IBM_Plex_Sans({
 	variable: '--font-geist-sans',
@@ -33,6 +34,7 @@ export default function RootLayout({
 			className="dark min-h-screen"
 		>
 			<body className={`${ibmPlexSans.variable} antialiased min-h-screen`}>
+				<ScrollToTop />
 				{children}
 				<Toaster />
 			</body>

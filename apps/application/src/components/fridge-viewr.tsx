@@ -23,7 +23,7 @@ export function FridgeViewer({
 	actions,
 }: FridgeViewerProps) {
 	return (
-		<div className="p-4 w-full aspect-[1/1.5] border border-border rounded-lg flex flex-col justify-between items-center relative">
+		<div className="p-4 w-full h-[70dvh] border border-border rounded-lg flex flex-col justify-between items-center relative">
 			{actions && <div className="absolute top-4 right-4">{actions}</div>}
 			<div className="absolute top-6 left-4 flex flex-col gap-2">
 				<div className="flex flex-col">
