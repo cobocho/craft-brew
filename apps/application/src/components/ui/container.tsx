@@ -10,7 +10,7 @@ export const Container = ({
 } & React.HTMLAttributes<HTMLDivElement>) => {
 	return (
 		<div
-			className={cn('container mx-auto px-4 py-6', className)}
+			className={cn('container mx-auto px-4 py-6 pt-16', className)}
 			{...props}
 		>
 			{children}
