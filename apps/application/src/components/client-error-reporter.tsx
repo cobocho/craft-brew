@@ -3,6 +3,24 @@
 import { useEffect } from 'react';
 
 const STORAGE_KEY = 'craftbrew:last_client_error';
+const RELOAD_KEY = 'craftbrew:server_action_reload';
+
+const maybeReloadForServerActionError = (message: string | null | undefined) => {
+	if (!message) {
+		return;
+	}
+	if (!message.includes('Failed to find Server Action')) {
+		return;
+	}
+	if (typeof window === 'undefined') {
+		return;
+	}
+	if (sessionStorage.getItem(RELOAD_KEY)) {
+		return;
+	}
+	sessionStorage.setItem(RELOAD_KEY, '1');
+	window.location.reload();
+};
 
 const sendError = async (payload: Record<string, unknown>) => {
 	try {
@@ -32,6 +50,7 @@ export function ClientErrorReporter() {
 			};
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 			sendError(payload);
+			maybeReloadForServerActionError(event.message);
 		};
 
 		const handleRejection = (event: PromiseRejectionEvent) => {
@@ -45,6 +64,9 @@ export function ClientErrorReporter() {
 			};
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 			sendError(payload);
+			maybeReloadForServerActionError(
+				String(event.reason?.message ?? event.reason ?? ''),
+			);
 		};
 
 		window.addEventListener('error', handleError);

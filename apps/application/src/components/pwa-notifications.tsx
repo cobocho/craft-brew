@@ -22,9 +22,13 @@ export function PwaNotifications() {
 
 	useEffect(() => {
 		const supported =
-			'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+			'serviceWorker' in navigator &&
+			'PushManager' in window &&
+			typeof Notification !== 'undefined';
 		setIsSupported(supported);
-		setPermission(Notification.permission);
+		if (typeof Notification !== 'undefined') {
+			setPermission(Notification.permission);
+		}
 
 		if (!supported) {
 			return;
