@@ -1,4 +1,5 @@
 export const TOPICS = {
-	STATUS: '/homebrew/status',
+	STATUS_PUB: '/homebrew/status',
+	STATUS_SUB: '$share/status-writer//homebrew/status',
 	ACK: '/homebrew/ack',
 } as const;

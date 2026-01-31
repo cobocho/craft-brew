@@ -18,6 +18,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pull-requests: write
 
     steps:
       - name: Start Timer
@@ -25,6 +26,12 @@ jobs:
 
       - name: Checkout source repo
         uses: actions/checkout@v4
+
+      - name: Get latest commit message
+        shell: bash
+        run: |
+          COMMIT_MSG="$(git log -1 --pretty=%B | head -n 1)"
+          echo "COMMIT_MSG=$COMMIT_MSG" >> $GITHUB_ENV
 
       - name: Prepare image variables
         shell: bash
@@ -59,6 +66,40 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: cobocho/gitops
+          token: ${{ secrets.GITOPS_REPO_ACCESS }}
+          path: gitops
+
+      - name: Update image tag in GitOps repo
+        shell: bash
+        run: |
+          cd gitops
+
+          # TODO: 실제 queue-ingest 배포 yaml 경로로 변경
+          FILE=./queue/queue-ingest-deploy.yaml
+
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/queue-ingest"
+
+          sed -i "s|$IMAGE_NAME:.*|$IMAGE_NAME:${{ env.IMAGE_TAG }}|g" "$FILE"
+
+      - name: Create Pull Request to GitOps repo
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITOPS_REPO_ACCESS }}
+          path: gitops
+          commit-message: "chore: update queue-ingest image tag to ${{ env.IMAGE_TAG }}"
+          branch: update/queue-ingest-${{ env.IMAGE_TAG }}
+          title: "Update queue-ingest image tag to ${{ env.IMAGE_TAG }} - ${{ env.COMMIT_MSG }}"
+          body: |
+            This PR updates the image tag for queue-ingest.
+
+            - Image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            - Latest commit: `${{ env.COMMIT_MSG }}`
+
       - name: Calculate Elapsed Time
         if: always()
         run: echo "ELAPSED_TIME=$(($(date +%s) - $START_TIME))" >> $GITHUB_ENV
@@ -71,9 +112,11 @@ jobs:
         with:
           args: |
             ✅ **queue-ingest container upload complete**
+            - Commit: `${{ env.COMMIT_MSG }}`
             - Elapsed: `${{ env.ELAPSED_TIME }}`s
             - Image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
             - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - Pull Request: ${{ steps.cpr.outputs.pull-request-url }}
 
       - name: Send Discord Notification (Failed)
         if: failure()
@@ -84,5 +127,6 @@ jobs:
           args: |
             ❌ **queue-ingest container upload failed**
             - Branch: `main`
+            - Commit: `${{ env.COMMIT_MSG }}`
             - Elapsed: `${{ env.ELAPSED_TIME }}`s
             - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

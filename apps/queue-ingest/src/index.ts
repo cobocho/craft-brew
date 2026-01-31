@@ -28,7 +28,7 @@ mqttClient.on('connect', (connack) => {
 		)}`,
 	);
 
-	mqttClient.subscribe([TOPICS.STATUS], { qos: 1 }, (err) => {
+	mqttClient.subscribe([TOPICS.STATUS_SUB], { qos: 1 }, (err, granted) => {
 		if (err) {
 			console.error(
 				`${tag} ${chalk.redBright('subscribe error:')} ${chalk.red(
@@ -39,9 +39,12 @@ mqttClient.on('connect', (connack) => {
 		}
 		console.log(
 			`${tag} ${chalk.cyanBright('subscribed to topics')} ${chalk.gray(
-				TOPICS.STATUS,
+				TOPICS.STATUS_SUB,
 			)}`,
 		);
+		if (granted?.[0]?.qos === 128) {
+			console.error(`${tag} broker rejected subscription (ACL / not allowed)`);
+		}
 	});
 
 	mqttClient.subscribe([TOPICS.ACK], { qos: 2 }, (err) => {
@@ -63,9 +66,10 @@ mqttClient.on('connect', (connack) => {
 
 mqttClient.on('message', (topic, message) => {
 	const payload = message.toString();
+	console.log(`${tag} RX topic=${topic} payload=${payload.toString()}`);
 
 	switch (topic) {
-		case TOPICS.STATUS:
+		case TOPICS.STATUS_PUB:
 			handleStatus(payload);
 			break;
 		case TOPICS.ACK:
