@@ -1,15 +1,18 @@
-FROM node:20-slim
+FROM oven/bun:1.1.8
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json bun.lock ./
 COPY packages ./packages
 COPY apps/application ./apps/application
 
-RUN npm install --workspaces --include-workspace-root
-RUN npm run --workspace application build
+RUN bun install --frozen-lockfile
+
+WORKDIR /app/apps/application
+RUN bun run build
 
 ENV NODE_ENV=production
-ENV PORT=3000
 
-CMD ["npm", "run", "--workspace", "application", "start"]
+EXPOSE 3000
+
+CMD ["bun", "run", "start"]
