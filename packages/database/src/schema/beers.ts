@@ -26,12 +26,12 @@ export const beers = pgTable('beers', {
 
 	memo: text('memo'), // TEXT (nullable)
 
-	fermentationStart: date('fermentation_start').notNull(), // DATE NOT NULL
-	fermentationEnd: date('fermentation_end').notNull(), // DATE NOT NULL
+	fermentationStart: timestamp('fermentation_start'),
+	fermentationEnd: timestamp('fermentation_end'),
 	fermentationTemp: decimal('fermentation_temp', {
 		precision: 3,
 		scale: 1,
-	}).notNull(), // DECIMAL(3,1) NOT NULL
+	}), // DECIMAL(3,1) NOT NULL
 	fermentationActualTemp: decimal('fermentation_actual_temp', {
 		precision: 3,
 		scale: 1,
@@ -41,9 +41,10 @@ export const beers = pgTable('beers', {
 		scale: 1,
 	}), // DECIMAL(3,1)
 
-	agingStart: date('aging_start').notNull(), // DATE NOT NULL
-	agingEnd: date('aging_end').notNull(), // DATE NOT NULL
-	agingTemp: decimal('aging_temp', { precision: 3, scale: 1 }).notNull(), // DECIMAL(3,1) NOT NULL
+	agingStart: timestamp('aging_start'),
+	agingEnd: timestamp('aging_end'),
+	agingTemp: decimal('aging_temp', { precision: 3, scale: 1 }), // DECIMAL(3,1) NOT NULL
+
 	agingActualTemp: decimal('aging_actual_temp', { precision: 3, scale: 1 }), // DECIMAL(3,1)
 	agingActualHumidity: decimal('aging_actual_humidity', {
 		precision: 3,

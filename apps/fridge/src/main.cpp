@@ -38,7 +38,7 @@ static const int DHT_PIN = 4; // 노란선(DATA)
 // =======================================================
 
 // ===================== DEBUG CONFIG =====================
-bool isDEBUG = true;
+bool isDEBUG = false;
 
 #define LOG_WIFI   1
 #define LOG_MQTT   1
