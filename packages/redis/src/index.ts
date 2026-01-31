@@ -42,6 +42,7 @@ export class HomebrewRedis {
 		beer: 'fridge:beer',
 		avg24h: 'fridge:24h',
 		avg24hVals: 'fridge:24h:vals',
+		lastDBSaveAt: 'fridge:last_db_save_at',
 	};
 
 	private readonly ttl = {
@@ -71,6 +72,15 @@ export class HomebrewRedis {
 		} catch {
 			return false;
 		}
+	}
+
+	async setLastDBSaveAt(ts: number): Promise<void> {
+		await this.redis.set(this.keys.lastDBSaveAt, ts.toString());
+	}
+
+	async getLastDBSaveAt(): Promise<number | null> {
+		const lastDBSaveAt = await this.redis.get(this.keys.lastDBSaveAt);
+		return lastDBSaveAt ? parseInt(lastDBSaveAt) : null;
 	}
 
 	async setStatus(status: FridgeStatus): Promise<void> {

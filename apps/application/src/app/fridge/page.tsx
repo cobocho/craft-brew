@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { BEER_TYPES } from '@/constants/beer-types';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
+import { getBeerById } from '@/api/beer/action';
 
 dayjs.extend(duration);
 
@@ -48,6 +49,7 @@ export default function FridgePage() {
 	const [agingDialogOpen, setAgingDialogOpen] = useState(false);
 	const [agingDays, setAgingDays] = useState('');
 	const [bottlingGravity, setBottlingGravity] = useState('');
+	const [originalGravity, setOriginalGravity] = useState<number | null>(null);
 
 	// SSE로 실시간 상태 받기
 	const { status: mqttStatus } = useFridgeStream();
@@ -74,6 +76,23 @@ export default function FridgePage() {
 	useEffect(() => {
 		fetchInitialData();
 	}, []);
+
+	useEffect(() => {
+		const loadOriginalGravity = async () => {
+			if (!agingDialogOpen || !data?.beer) {
+				return;
+			}
+			const result = await getBeerById(data.beer.id);
+			if (result.success && result.data?.og) {
+				const og = Number(result.data.og);
+				setOriginalGravity(Number.isFinite(og) ? og : null);
+			} else {
+				setOriginalGravity(null);
+			}
+		};
+
+		loadOriginalGravity();
+	}, [agingDialogOpen, data?.beer]);
 
 	useEffect(() => {
 		const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -137,6 +156,7 @@ export default function FridgePage() {
 				setAgingDialogOpen(false);
 				setAgingDays('');
 				setBottlingGravity('');
+				setOriginalGravity(null);
 				await fetchInitialData();
 			} else {
 				toast.error(result.error || '숙성 시작에 실패했습니다.');
@@ -148,6 +168,18 @@ export default function FridgePage() {
 			setActionState(null);
 		}
 	};
+
+	const expectedAbv = (() => {
+		if (originalGravity === null) {
+			return null;
+		}
+		const fg = Number(bottlingGravity);
+		if (!Number.isFinite(fg)) {
+			return null;
+		}
+		const abv = (originalGravity - fg) * 131.25;
+		return abv > 0 ? abv : 0;
+	})();
 
 	const handleFinishBrewing = async () => {
 		setActionState('finish');
@@ -374,6 +406,19 @@ export default function FridgePage() {
 									onChange={(event) => setBottlingGravity(event.target.value)}
 									className="h-9"
 								/>
+							</div>
+							<div className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
+								<p className="text-xs text-muted-foreground">예상 도수</p>
+								<p className="text-base font-semibold">
+									{expectedAbv === null
+										? 'OG 또는 FG 입력 필요'
+										: `${expectedAbv.toFixed(1)}%`}
+								</p>
+								{originalGravity === null && (
+									<p className="text-xs text-muted-foreground">
+										OG가 없어 계산할 수 없습니다.
+									</p>
+								)}
 							</div>
 						</div>
 						<DialogFooter>

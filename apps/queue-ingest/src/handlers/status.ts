@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { StatusPayload } from '@craft-brew/protocol';
 import { db, fridgeLogs } from '@craft-brew/database';
 import { redis } from '../lib/redis';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 const DB_SAVE_THROTTLE_MS = 1000 * 60; // 1 minute
 
@@ -25,19 +25,16 @@ export async function handleStatus(payload: string) {
 			updatedAt: ts,
 		});
 
-		const skipDBSave =
-			currentStatus && ts - currentStatus.updatedAt < DB_SAVE_THROTTLE_SEC;
+		const lastDBSaveAt = await redis.getLastDBSaveAt();
+		const untilDBSaveSeconds = ts - (lastDBSaveAt ?? 0);
 
-		if (status.temp !== null) {
-			await redis.addReading(status.temp, status.humidity ?? 0);
-		}
-
-		if (skipDBSave) {
+		if (lastDBSaveAt && untilDBSaveSeconds < DB_SAVE_THROTTLE_SEC) {
 			console.log(chalk.gray('[STATUS]'), 'db save skipped (throttled)');
 			return;
 		}
 
 		if (status.temp !== null) {
+			await redis.addReading(status.temp, status.humidity ?? 0);
 			const beer = await redis.getBeer();
 
 			const existedLog = await db.query.fridgeLogs.findFirst({
@@ -57,9 +54,9 @@ export async function handleStatus(payload: string) {
 				targetTemp: status.target?.toString(),
 				beerId: beer?.id ?? null,
 			});
+			await redis.setLastDBSaveAt(ts);
+			console.log(chalk.green('[STATUS]'), 'saved to db');
 		}
-
-		console.log(chalk.green('[STATUS]'), 'saved');
 	} catch (error) {
 		console.error(
 			chalk.redBright('[STATUS] error:'),

@@ -156,6 +156,28 @@ export async function deleteBeer(id: number) {
 	}
 }
 
+export async function getBeerById(id: number) {
+	try {
+		const result = await db
+			.select()
+			.from(beers)
+			.where(eq(beers.id, id))
+			.limit(1);
+
+		const beer = result[0];
+		if (!beer) {
+			return { success: false, error: 'not_found' };
+		}
+
+		return { success: true, data: beer };
+	} catch (error) {
+		return {
+			success: false,
+			error: (error as Error).message,
+		};
+	}
+}
+
 export async function setBeerFermentationDuration({
 	id,
 	days,
