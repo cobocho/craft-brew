@@ -79,7 +79,7 @@ jobs:
           cd gitops
 
           # TODO: 실제 queue-ingest 배포 yaml 경로로 변경
-          FILE=./queue/queue-ingest-deploy.yaml
+          FILE=./queue-ingest/deploy.yaml
 
           IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/queue-ingest"
 
