@@ -1,6 +1,6 @@
 import { Container } from '@/components/ui/container';
 
-export default function BeerCreateLayout({
+export default function BeerLayout({
 	children,
 }: {
 	children: React.ReactNode;

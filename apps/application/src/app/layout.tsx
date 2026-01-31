@@ -30,9 +30,9 @@ export default function RootLayout({
 	return (
 		<html
 			lang="en"
-			className="dark"
+			className="dark min-h-screen"
 		>
-			<body className={`${ibmPlexSans.variable} antialiased`}>
+			<body className={`${ibmPlexSans.variable} antialiased min-h-screen`}>
 				{children}
 				<Toaster />
 			</body>

@@ -27,7 +27,7 @@ static const char* TOPIC_ACK    = "/homebrew/ack";    // publish QoS2
 
 static const uint16_t HTTP_PORT = 80;
 
-static const int REPORT_INTERVAL_SEC = 60;
+static const int REPORT_INTERVAL_SEC = 3;
 static const float TEMP_RAPID_DELTA = 1.0f;
 static const float TARGET_MIN = 2.0f;
 static const float TARGET_MAX = 30.0f;
@@ -38,7 +38,7 @@ static const int DHT_PIN = 4; // 노란선(DATA)
 // =======================================================
 
 // ===================== DEBUG CONFIG =====================
-bool isDEBUG = false;
+bool isDEBUG = true;
 
 #define LOG_WIFI   1
 #define LOG_MQTT   1
