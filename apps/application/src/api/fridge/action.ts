@@ -2,7 +2,7 @@
 
 import { HomebrewRedis } from '@craft-brew/redis';
 import mqtt from 'mqtt';
-import { and, desc, gte, lte } from 'drizzle-orm';
+import { and, desc, gte, lte, eq, count, isNotNull } from 'drizzle-orm';
 import { db, commands, fridgeLogs } from '@craft-brew/database';
 import type { Command } from '@craft-brew/protocol';
 
@@ -209,6 +209,96 @@ export async function getFridgeLogs({
 				peltierPower: log.peltierPower,
 				beerId: log.beerId,
 			})),
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error: (error as Error).message,
+		};
+	}
+}
+
+export async function getCommandLogs({
+	start,
+	end,
+	status,
+}: {
+	start: string;
+	end: string;
+	status: 'all' | 'success' | 'failed';
+}) {
+	try {
+		const startDate = new Date(start);
+		const endDate = new Date(end);
+
+		if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+			return { success: false, error: 'invalid_date' };
+		}
+
+		if (startDate > endDate) {
+			return { success: false, error: 'invalid_range' };
+		}
+
+		const rangeFilter = and(
+			gte(commands.ts, startDate),
+			lte(commands.ts, endDate),
+		);
+
+		const [totalResult, successResult, failedResult] = await Promise.all([
+			db.select({ count: count() }).from(commands).where(rangeFilter),
+			db
+				.select({ count: count() })
+				.from(commands)
+				.where(and(rangeFilter, eq(commands.completed, true))),
+			db
+				.select({ count: count() })
+				.from(commands)
+				.where(
+					and(
+						rangeFilter,
+						eq(commands.completed, false),
+						isNotNull(commands.error),
+					),
+				),
+		]);
+
+		let statusFilter = rangeFilter;
+		if (status === 'success') {
+			statusFilter = and(rangeFilter, eq(commands.completed, true));
+		}
+		if (status === 'failed') {
+			statusFilter = and(
+				rangeFilter,
+				eq(commands.completed, false),
+				isNotNull(commands.error),
+			);
+		}
+
+		const logs = await db
+			.select()
+			.from(commands)
+			.where(statusFilter)
+			.orderBy(desc(commands.ts));
+
+		const total = totalResult[0]?.count ?? 0;
+		const success = successResult[0]?.count ?? 0;
+		const failed = failedResult[0]?.count ?? 0;
+		const pending = Math.max(0, total - success - failed);
+
+		return {
+			success: true,
+			data: logs.map((log) => ({
+				id: log.cmd_id,
+				cmd: log.type,
+				value: log.value,
+				completed: log.completed,
+				error: log.error,
+				ts: log.ts.toISOString(),
+				completedAt: log.completed_at
+					? log.completed_at.toISOString()
+					: null,
+			})),
+			summary: { total, success, failed, pending },
 		};
 	} catch (error) {
 		return {

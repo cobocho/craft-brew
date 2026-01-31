@@ -1,0 +1,131 @@
+name: Build & Push application image (GHCR)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/application/**"
+      - "packages/**"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/deploy-application.yml"
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+
+    steps:
+      - name: Start Timer
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Get latest commit message
+        shell: bash
+        run: |
+          COMMIT_MSG="$(git log -1 --pretty=%B | head -n 1)"
+          echo "COMMIT_MSG=$COMMIT_MSG" >> $GITHUB_ENV
+
+      - name: Prepare image variables
+        shell: bash
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/craft-brew-application"
+          TS="$(date +%Y%m%d%H%M%S)"
+          SHA_SHORT="${GITHUB_SHA::7}"
+          IMAGE_TAG="${TS}-${SHA_SHORT}"
+
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/application/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: cobocho/gitops
+          token: ${{ secrets.GITOPS_REPO_ACCESS }}
+          path: gitops
+
+      - name: Update image tag in GitOps repo
+        shell: bash
+        run: |
+          cd gitops
+
+          FILE=./craft-brew-application/deploy.yaml
+
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/craft-brew-application"
+
+          sed -i "s|$IMAGE_NAME:.*|$IMAGE_NAME:${{ env.IMAGE_TAG }}|g" "$FILE"
+
+      - name: Create Pull Request to GitOps repo
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITOPS_REPO_ACCESS }}
+          path: gitops
+          commit-message: "chore: update application image tag to ${{ env.IMAGE_TAG }}"
+          branch: update/application-${{ env.IMAGE_TAG }}
+          title: "Update application image tag to ${{ env.IMAGE_TAG }} - ${{ env.COMMIT_MSG }}"
+          body: |
+            This PR updates the image tag for application.
+
+            - Image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            - Latest commit: `${{ env.COMMIT_MSG }}`
+
+      - name: Calculate Elapsed Time
+        if: always()
+        run: echo "ELAPSED_TIME=$(($(date +%s) - $START_TIME))" >> $GITHUB_ENV
+
+      - name: Send Discord Notification (Success)
+        if: success()
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        with:
+          args: |
+            ✅ **application container upload complete**
+            - Commit: `${{ env.COMMIT_MSG }}`
+            - Elapsed: `${{ env.ELAPSED_TIME }}`s
+            - Image: `${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}`
+            - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - Pull Request: ${{ steps.cpr.outputs.pull-request-url }}
+
+      - name: Send Discord Notification (Failed)
+        if: failure()
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        with:
+          args: |
+            ❌ **application container upload failed**
+            - Branch: `main`
+            - Commit: `${{ env.COMMIT_MSG }}`
+            - Elapsed: `${{ env.ELAPSED_TIME }}`s
+            - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

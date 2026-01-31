@@ -7,7 +7,7 @@ import { useFridgeStream } from '@/hooks/use-fridge-stream';
 import type { FridgeStatus, Average24h, FridgeBeer } from '@craft-brew/redis';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Thermometer, List } from 'lucide-react';
+import { Thermometer, List, Command } from 'lucide-react';
 import Link from 'next/link';
 
 interface FridgeData {
@@ -110,34 +110,46 @@ export default function FridgePage() {
 			<PageHeader
 				title="냉장고"
 				showBackButton
-				action={
-					<div className="flex items-center gap-2">
-						<Button
-							asChild
-							variant="ghost"
-							size="icon-sm"
-						>
-							<Link
-								href="/fridge/info"
-								aria-label="현재 상태"
+					action={
+						<div className="flex items-center gap-2">
+							<Button
+								asChild
+								variant="ghost"
+								size="icon-sm"
 							>
-								<Thermometer className="size-5" />
-							</Link>
-						</Button>
-						<Button
-							asChild
-							variant="ghost"
-							size="icon-sm"
-						>
-							<Link
-								href="/fridge/logs"
-								aria-label="온도 로그"
+								<Link
+									href="/fridge/info"
+									aria-label="현재 상태"
+								>
+									<Thermometer className="size-5" />
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								size="icon-sm"
 							>
-								<List className="size-5" />
-							</Link>
-						</Button>
-					</div>
-				}
+								<Link
+									href="/fridge/commands"
+									aria-label="커맨드 로그"
+								>
+									<Command className="size-5" />
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								size="icon-sm"
+							>
+								<Link
+									href="/fridge/logs"
+									aria-label="온도 로그"
+								>
+									<List className="size-5" />
+								</Link>
+							</Button>
+						</div>
+					}
 			/>
 			<div className="h-full flex items-center justify-center overflow-hidden w-full">
 				<FridgeViewer
