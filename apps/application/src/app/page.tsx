@@ -40,32 +40,41 @@ export default function Home() {
 						냉장고 상태와 로그, 맥주 배치를 한 곳에서 관리합니다.
 					</p>
 					<div className="flex flex-wrap gap-2">
-						<Button asChild size="sm">
+						<Button
+							asChild
+							size="sm"
+						>
 							<Link href="/fridge">냉장고</Link>
 						</Button>
-						<Button asChild size="sm" variant="outline">
+						<Button
+							asChild
+							size="sm"
+							variant="outline"
+						>
 							<Link href="/fridge/logs">로그</Link>
 						</Button>
-						<Button asChild size="sm" variant="outline">
+						<Button
+							asChild
+							size="sm"
+							variant="outline"
+						>
 							<Link href="/beer">맥주</Link>
 						</Button>
 					</div>
 				</header>
 
-				<section className="grid gap-3 sm:grid-cols-2">
+				<section className="grid gap-3 grid-cols-2">
 					{quickLinks.map((item) => {
 						const Icon = item.icon;
 						return (
 							<Link
 								key={item.title}
 								href={item.href}
-								className="rounded-lg border border-border/70 bg-background/80 p-4 transition hover:bg-muted/30"
+								className="rounded-lg border border-border/70 bg-background/80 p-4 transition hover:bg-muted/30 aspect-square flex flex-col justify-center items-center gap-2"
 							>
-								<div className="flex items-center justify-between">
-									<span className="text-sm font-medium">{item.title}</span>
-									<Icon className="size-4 text-muted-foreground" />
-								</div>
-								<p className="mt-2 text-xs text-muted-foreground">
+								<Icon className="size-12 text-muted-foreground" />
+								<span className="text-sm font-medium">{item.title}</span>
+								<p className="text-xs text-muted-foreground">
 									{item.description}
 								</p>
 							</Link>
