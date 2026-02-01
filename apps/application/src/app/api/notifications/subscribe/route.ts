@@ -16,6 +16,11 @@ export async function POST(req: Request) {
 			);
 		}
 
+		console.log(
+			'[PUSH_SUBSCRIBE]',
+			body.subscription.endpoint,
+			body.subscription.meta?.userAgent ?? 'unknown',
+		);
 		await redis.addPushSubscription(body.subscription);
 		return NextResponse.json({ success: true });
 	} catch (error) {

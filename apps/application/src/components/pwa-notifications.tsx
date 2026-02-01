@@ -72,7 +72,16 @@ export function PwaNotifications() {
 			await fetch('/api/notifications/subscribe', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ subscription: sub.toJSON() }),
+				body: JSON.stringify({
+					subscription: {
+						...sub.toJSON(),
+						meta: {
+							userAgent: navigator.userAgent,
+							platform: navigator.platform,
+							createdAt: new Date().toISOString(),
+						},
+					},
+				}),
 			});
 
 			setIsSubscribed(true);

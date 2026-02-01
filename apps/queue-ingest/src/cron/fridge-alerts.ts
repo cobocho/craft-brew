@@ -24,13 +24,22 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 const minuteKey = (date: dayjs.Dayjs) => date.format('YYYY-MM-DD HH:mm');
 
 async function sendAlert(title: string, body: string) {
+	console.log({
+		VAPID_PUBLIC_KEY,
+		VAPID_PRIVATE_KEY,
+	});
 	if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
 		console.log(chalk.yellow('[CRON]'), 'VAPID keys missing, skip push');
 		return;
 	}
 
 	const subscriptions = await redis.getPushSubscriptions();
+	console.log(
+		chalk.cyan('[CRON]'),
+		`push subscribers: ${subscriptions.length}`,
+	);
 	if (subscriptions.length === 0) {
+		console.log(chalk.yellow('[CRON]'), 'no push subscribers found');
 		return;
 	}
 
@@ -45,13 +54,21 @@ async function sendAlert(title: string, body: string) {
 						url: '/fridge',
 					}),
 				);
+				console.log(chalk.green('[CRON]'), `push sent: ${sub.endpoint}`);
 			} catch (error) {
+				const err = error as Error & { statusCode?: number; body?: string };
 				console.error(
 					chalk.redBright('[CRON] push error:'),
-					(error as Error).message,
+					err.message,
+					err.statusCode ? `status=${err.statusCode}` : '',
+					err.body ? `body=${err.body}` : '',
 				);
 				if ((error as { statusCode?: number }).statusCode === 410) {
 					await redis.removePushSubscription(sub.endpoint);
+					console.log(
+						chalk.yellow('[CRON]'),
+						`subscription removed: ${sub.endpoint}`,
+					);
 				}
 			}
 		}),
@@ -111,10 +128,10 @@ async function checkFridgeAlerts() {
 		const client = redis.getClient();
 		for (const task of tasks) {
 			const wasSent = await client.set(task.key, '1', 'EX', 60 * 60, 'NX');
-			if (wasSent) {
-				await sendAlert(task.title, task.body);
-				console.log(chalk.green('[CRON]'), task.title);
-			}
+			// if (wasSent) {
+			await sendAlert(task.title, task.body);
+			console.log(chalk.green('[CRON]'), task.title);
+			// }
 		}
 	} catch (error) {
 		console.error(chalk.redBright('[CRON] error:'), (error as Error).message);

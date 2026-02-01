@@ -40,6 +40,11 @@ export interface PushSubscriptionData {
 		p256dh: string;
 		auth: string;
 	};
+	meta?: {
+		userAgent?: string;
+		platform?: string;
+		createdAt?: string;
+	};
 }
 
 export class HomebrewRedis {
@@ -58,7 +63,7 @@ export class HomebrewRedis {
 		status: 600,
 	};
 
-	private readonly maxVals = 60 * 60 * 24;
+	private readonly maxVals = 24 * 60;
 
 	constructor(url?: string) {
 		this.redis = new Redis(
