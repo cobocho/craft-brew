@@ -122,6 +122,8 @@ export default function FridgeLogsPage() {
 			humidity: log.humidity,
 		}));
 
+	const humidityChartData = chartData.filter((d) => d.humidity !== null);
+
 	return (
 		<div className="h-full overflow-y-auto pb-6">
 			<PageHeader
@@ -252,12 +254,9 @@ export default function FridgeLogsPage() {
 											if (typeof label !== 'string') return '';
 											return new Date(label).toLocaleString('ko-KR');
 										}}
-										formatter={(value, name) => {
-											if (typeof value !== 'number') return ['-', name];
-											return [
-												name === 'temperature' ? `${value}°C` : `${value}%`,
-												name === 'temperature' ? '온도' : '습도',
-											];
+										formatter={(value) => {
+											if (typeof value !== 'number') return ['-', '온도'];
+											return [`${value}°C`, '온도'];
 										}}
 									/>
 									<Line
@@ -266,6 +265,55 @@ export default function FridgeLogsPage() {
 										stroke="#10b981"
 										strokeWidth={2}
 										dot={false}
+									/>
+								</LineChart>
+							</ResponsiveContainer>
+						)}
+					</div>
+				</div>
+				<div className="rounded-lg border border-border/70 bg-background p-3">
+					<div className="flex items-center justify-between">
+						<h3 className="text-sm font-semibold">습도 추이</h3>
+						<p className="text-xs text-muted-foreground">
+							{humidityCount}개 포인트
+						</p>
+					</div>
+					<div className="mt-3 h-56 min-h-[14rem] w-full">
+						{humidityChartData.length === 0 ? (
+							<div className="h-full rounded-md border border-dashed border-border/70 flex items-center justify-center text-sm text-muted-foreground">
+								표시할 데이터가 없습니다.
+							</div>
+						) : (
+							<ResponsiveContainer width="100%" height="100%" minHeight={200}>
+								<LineChart
+									data={humidityChartData}
+									margin={{ top: 8, right: 12, left: 0, bottom: 8 }}
+								>
+									<XAxis
+										dataKey="time"
+										minTickGap={32}
+										tick={{ fontSize: 11 }}
+										tickFormatter={(value: string) =>
+											new Date(value).toLocaleTimeString('ko-KR', {
+												hour: '2-digit',
+												minute: '2-digit',
+											})
+										}
+									/>
+									<YAxis
+										width={36}
+										tick={{ fontSize: 11 }}
+										tickFormatter={(value: number) => `${value}%`}
+									/>
+									<Tooltip
+										labelFormatter={(label) => {
+											if (typeof label !== 'string') return '';
+											return new Date(label).toLocaleString('ko-KR');
+										}}
+										formatter={(value) => {
+											if (typeof value !== 'number') return ['-', '습도'];
+											return [`${value}%`, '습도'];
+										}}
 									/>
 									<Line
 										type="monotone"
