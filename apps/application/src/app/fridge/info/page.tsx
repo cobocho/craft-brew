@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FridgeSettingsDialog } from '@/components/fridge-settings-dialog';
 import { getFridgeStatus } from '@/api/fridge/action';
-import { useFridgeStream } from '@/hooks/use-fridge-stream';
+import { useFridgeStream } from '@/contexts/fridge-stream-context';
 import type { FridgeStatus, Average24h, FridgeBeer } from '@craft-brew/redis';
 import { PageHeader } from '@/components/page-header';
 

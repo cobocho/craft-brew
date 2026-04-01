@@ -8,7 +8,7 @@ import {
 	startFridgeBeerAging,
 } from '@/api/fridge/action';
 import { useEffect, useState } from 'react';
-import { useFridgeStream } from '@/hooks/use-fridge-stream';
+import { useFridgeStream } from '@/contexts/fridge-stream-context';
 import type { FridgeStatus, Average24h, FridgeBeer } from '@craft-brew/redis';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
